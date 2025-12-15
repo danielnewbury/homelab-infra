@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  plex:
+    image: plexinc/pms-docker
+    container_name: plex
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - plex-config:/config
+      - /mnt/media:/media
+    ports:
+      - 32400:32400
+
+volumes:
+  plex-config:

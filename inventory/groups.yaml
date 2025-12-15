@@ -1,0 +1,7 @@
+groups:
+  docker_hosts:
+    - media-server-2024
+    - rpi4
+
+  baremetal:
+    - pihole
