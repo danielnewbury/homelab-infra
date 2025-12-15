@@ -1,0 +1,65 @@
+volumes:
+  calibre_config:
+  calibre_web_config:
+  lazylibrarian_config:
+
+services:
+  calibre:
+    image: lscr.io/linuxserver/calibre:latest
+    container_name: calibre
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - calibre_config:/config
+      - ${EBOOKS_ROOT}:/library
+    ports:
+      - "${CALIBRE_UI_PORT}:8081"
+      - "${CALIBRE_SERVER_PORT}:8080"
+    restart: unless-stopped
+
+  calibre-web:
+    image: lscr.io/linuxserver/calibre-web:latest
+    container_name: calibre-web
+    depends_on:
+      calibre:
+        condition: service_started
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - DOCKER_MODS=linuxserver/mods:universal-calibre
+    volumes:
+      - calibre_web_config:/config
+      - ${EBOOKS_ROOT}:/books
+    ports:
+      - "${CALIBRE_WEB_PORT}:8083"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  lazylibrarian:
+    image: lscr.io/linuxserver/lazylibrarian:latest
+    container_name: lazylibrarian
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - lazylibrarian_config:/config
+      - ${AUDIOBOOKS_ROOT}:/audiobooks
+      - ${DOWNLOADS_ROOT}:/downloads
+    ports:
+      - "${LAZYLIBRARIAN_PORT}:5299"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5299"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped

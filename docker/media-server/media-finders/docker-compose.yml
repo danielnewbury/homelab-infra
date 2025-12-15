@@ -77,58 +77,6 @@ services:
     networks:
       - media-network
 
-  readarr:
-    image: lscr.io/linuxserver/readarr:nightly
-    container_name: readarr
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    volumes:
-      - readarr-config:/config
-      - ${USB1}/books:/data1/books
-      - ${USB2}/books:/data2/books
-      - ${USB1}/downloads:/data1/downloads
-      - ${USB2}/downloads:/data2/downloads
-    ports:
-      - ${READARR_PORT}:8787
-    healthcheck:
-      test: curl --fail http://localhost:8787 || exit 1
-      interval: 1m
-      timeout: 10s
-      retries: 3
-    mem_limit: 512m
-    cpus: "0.5"
-    restart: unless-stopped
-    networks:
-      - media-network
-
-  readarr-audio:
-    image: lscr.io/linuxserver/readarr:nightly
-    container_name: readarr-audio
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    volumes:
-      - readarr-audio-config:/config
-      - ${USB1}/audiobooks:/data1/audiobooks
-      - ${USB2}/audiobooks:/data2/audiobooks
-      - ${USB1}/downloads:/data1/downloads
-      - ${USB2}/downloads:/data2/downloads
-    ports:
-      - ${READARR_AUDIO_PORT}:8787
-    healthcheck:
-      test: curl --fail http://localhost:8787 || exit 1
-      interval: 1m
-      timeout: 10s
-      retries: 3
-    mem_limit: 512m
-    cpus: "0.5"
-    restart: unless-stopped
-    networks:
-      - media-network
-
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
