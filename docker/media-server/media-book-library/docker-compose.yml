@@ -11,6 +11,7 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
+      - DISABLE_WEBRTC=1
     volumes:
       - calibre_config:/config
       - ${EBOOKS_ROOT}:/library
