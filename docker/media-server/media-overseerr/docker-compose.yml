@@ -1,45 +1,22 @@
-version: "3.9"
-
 services:
   overseerr:
-    image: sctx/overseerr:latest
+    image: lscr.io/linuxserver/overseerr:latest
     container_name: overseerr
-    restart: unless-stopped
     environment:
-      - LOG_LEVEL=info
-      - TZ=Europe/London
-      - PORT=5055
-      # Optional: if integrating with Authentik forward auth later
-      # - AUTH_ENABLED=false
-    ports:
-      - 5055:5055
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
     volumes:
-      - overseerr_config:/app/config
-  #  labels:
-     # - "traefik.enable=true"
-
-      # HTTPS Router
-     # - "traefik.http.routers.overseerr.entrypoints=websecure"
-    #  - "traefik.http.routers.overseerr.rule=Host(`overseerr.ms.c1oud.online`)"
-   #   - "traefik.http.routers.overseerr.tls.certresolver=myresolver"
-  #    - "traefik.http.routers.overseerr.service=overseerr"
- #     - "traefik.http.services.overseerr.loadbalancer.server.port=5055"
-
-      # HTTP redirect to HTTPS
-    #  - "traefik.http.routers.overseerr-http.entrypoints=web"
-   #   - "traefik.http.routers.overseerr-http.rule=Host(`overseerr.ms.c1oud.online`)"
-  #    - "traefik.http.routers.overseerr-http.middlewares=redirect-to-https"
-
-      # Middlewares
-   #   - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
-  #    - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
- #     - "traefik.http.routers.overseerr.middlewares=authentik@docker,secure-headers@docker"
+      - overseerr-config:/config
+    ports:
+      - ${OVERSEERR_PORT}:5055
+    restart: unless-stopped
     networks:
-      - arr-network
+      - media-network
 
 volumes:
-  overseerr_config:
+  overseerr-config:
 
 networks:
-  arr-network:
+  media-network:
     external: true
