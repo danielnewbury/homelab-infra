@@ -1,0 +1,74 @@
+version: "3.3"
+
+# Docker Compose configuration for Gluetun, SABnzbd, and qBittorrent.
+
+services:
+  # Gluetun: VPN client for secure routing.
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - 8888:8888/tcp          # HTTP proxy
+      - 8388:8388/tcp          # Shadowsocks TCP
+      - 8388:8388/udp          # Shadowsocks UDP
+      - 8080:8080/tcp          # SABnzbd
+      - 8081:8081/tcp          # qBittorrent
+    environment:
+      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}
+      - VPN_TYPE=${VPN_TYPE}
+      - OPENVPN_USER=${VPN_USER}
+      - OPENVPN_PASSWORD=${VPN_PASSWORD}
+      - SERVER_REGIONS=${SERVER_REGIONS}
+      - DOT=${DOT}
+      - DNS=${DNS}
+      - TZ=${TZ}
+    mem_limit: "1024m"
+    cpus: "2.0"
+    volumes:
+      - gluetun-config:/gluetun
+    restart: unless-stopped
+
+  # SABnzbd: Usenet downloader.
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    network_mode: service:gluetun  # Routes traffic through Gluetun
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - sabnzbd-config:/config
+      - ${USB1}/downloads:/data1/downloads
+      - ${USB2}/downloads:/data2/downloads
+    depends_on:
+      - gluetun
+    restart: unless-stopped
+
+  # qBittorrent: Torrent downloader.
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: service:gluetun  # Routes traffic through Gluetun
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - WEBUI_PORT=${QBITTORRENT_WEBUI_PORT}
+    volumes:
+      - qbittorrent-config:/config
+      - ${USB1}/downloads:/data1/downloads
+      - ${USB2}/downloads:/data2/downloads
+    depends_on:
+      - gluetun
+    restart: unless-stopped
+
+# Volumes for persistent data storage
+volumes:
+  gluetun-config:
+  sabnzbd-config:
+  qbittorrent-config:

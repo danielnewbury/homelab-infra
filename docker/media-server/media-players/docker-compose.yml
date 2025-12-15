@@ -1,0 +1,121 @@
+version: "3.3"
+
+# Docker Compose configuration for a media server ecosystem.
+
+services:
+  # Tautulli: Monitors Plex server activity and statistics.
+  tautulli:
+    image: lscr.io/linuxserver/tautulli:latest
+    container_name: tautulli
+    environment:
+      - PUID=${PUID}         # User ID for permissions
+      - PGID=${PGID}         # Group ID for permissions
+      - TZ=${TZ}             # Time zone
+    volumes:
+      - tautulli-config:/config  # Configuration files
+    ports:
+      - ${TAUTULLI_PORT}:8181    # Web UI port
+    restart: unless-stopped
+    healthcheck:
+      test: curl --fail http://localhost:8181 || exit 1
+      interval: 1m
+      timeout: 10s
+      retries: 3
+    mem_limit: 512m           # Limit memory usage to 512 MB
+    cpus: "0.5"              # Limit CPU usage to 50%
+    networks:
+      - media-network
+
+  # Nginx Proxy Manager: Simplifies reverse proxy management for other services.
+  npm:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: npm
+    restart: unless-stopped
+#    environment:
+ #     - PUID=${PUID}
+  #    - PGID=${PGID}
+   #   - TZ=${TZ}
+    ports:
+      - "${NPM_HTTP_PORT}:80"    # HTTP port
+      - "${NPM_HTTPS_PORT}:443"  # HTTPS port
+      - "${NPM_ADMIN_PORT}:81"   # Admin panel port
+    volumes:
+      - npm-data:/data             # Application data
+      - letsencrypt:/etc/letsencrypt  # SSL certificates
+    healthcheck:
+      test: curl --fail http://localhost:81 || exit 1
+      interval: 1m
+      timeout: 10s
+      retries: 3
+    mem_limit: 512m           # Limit memory usage to 256/512 MB
+    cpus: "0.5"              # Limit CPU usage to 30% / 50%
+    networks:
+      - media-network
+      - arr-network
+
+  # Plex Media Server: Streams and organizes your media library.
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    network_mode: host          # Host networking is required for UPnP/DLNA
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - VERSION=docker
+    volumes:
+      - plexmediaserver-library-config:/config  # Configuration files
+      - ${USB1}:/data6tb         # USB drive for media
+      - ${USB2}:/data11tb        # Another USB drive for media
+#    devices:
+ #     - /dev/dri:/dev/dri
+    restart: unless-stopped
+    healthcheck:
+      test: curl --fail http://127.0.0.1:32400/web/index.html || exit 1
+      interval: 1m
+      timeout: 10s
+      retries: 3
+    mem_limit: 2g               # Limit memory usage to 1 GB
+    cpus: "1.0"                # Limit CPU usage to 100%
+
+  # Music Assistant: Organizes and streams music collections.
+  music-assistant:
+    image: ghcr.io/music-assistant/server:latest
+    container_name: music-assistant
+    network_mode: host          # Host networking is required for UPnP/DLNA
+    environment:
+      - PUID=${MUSIC_ASSISTANT_PUID}
+      - PGID=${MUSIC_ASSISTANT_PGID}
+      - TZ=${TZ}
+    volumes:
+      - music-assistant-config:/config  # Configuration files
+      - ${MUSIC_ASSISTANT_DIR1}:/media/music1  # First music library
+      - ${MUSIC_ASSISTANT_DIR2}:/media/music2  # Second music library
+#    ports:
+ #     - ${MUSIC_ASSISTANT_PORT}:8095      # Web UI port
+    restart: unless-stopped
+    healthcheck:
+      test: curl --fail http://localhost:8095 || exit 1
+      interval: 1m
+      timeout: 10s
+      retries: 3
+    mem_limit: 2g           # Limit memory usage to 512 MB
+    cpus: "1.0"              # Limit CPU usage to 50%
+#    networks:
+ #     - media-network
+
+# Volumes for persistent data storage
+volumes:
+  tautulli-config:
+  npm-data:
+  letsencrypt:
+  plexmediaserver-library-config:
+  music-assistant-config:
+
+# Custom network for container communication
+networks:
+  media-network:
+    driver: bridge
+
+  arr-network:
+    external: true # Connects to an existing Docker network named "arr(oh arr)-network" 

@@ -1,0 +1,232 @@
+version: "3.3"
+
+# Docker Compose configuration for *arr services with shared media sources (usb1 and usb2) and multi-network communication.
+
+services:
+  # MariaDB: Database for Ombi
+ # mysql_db:
+  #  image: mysql:5.7
+ #   container_name: mysql_db
+  #  environment:
+ #     - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}  # Root password for the database
+  #    - MYSQL_DATABASE=ombi                         # Name of the Ombi database
+ #     - MYSQL_USER=${MYSQL_USER}                   # Ombi database user
+  #    - MYSQL_PASSWORD=${MYSQL_PASSWORD}           # Password for the database user
+ #   ports:
+  #    - 3306:3306
+ #   volumes:
+  #    - mysql-db-data:/var/lib/mysql                # Persistent database storage
+ #   restart: unless-stopped
+  #  networks:
+   #   - arr-network
+    #  - media-network
+
+
+  # Ombi: Media request management tool
+#  ombi:
+ #   image: ghcr.io/linuxserver/ombi:latest
+  #  container_name: ombi
+#    network_mode: host
+ #   environment:
+  #    - PUID=${PUID}
+   #   - PGID=${PGID}
+   #   - TZ=${TZ}
+    #  - BASE_URL=/ #optional
+#      - SQL_CONNECTIONSTRING=Server=mysql_db;Port=3306;Database=ombi;Uid=daniel;Pwd=Ca53yjn2219;  # MySQL/MariaDB connection string
+#    volumes:
+ #     - ombi-config:/config
+#    ports:
+ #     - 3579:3579
+  #  restart: unless-stopped
+ #   healthcheck:
+  #    test: curl --fail http://localhost:3579 || exit 1
+   #   interval: 1m
+    #  timeout: 10s
+     # retries: 3
+ #   depends_on:
+  #    - mysql_db  # Ensure database starts before Ombi
+  #  networks:
+   #   - arr-network
+    #  - media-network
+
+
+  # Sonarr: Automates downloading and organization of TV shows.
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=${PUID}         # User ID for permissions
+      - PGID=${PGID}         # Group ID for permissions
+      - TZ=${TZ}             # Time zone
+    volumes:
+      - sonarr-config:/config             # Configuration files
+      - ${USB1}/tv:/data1/tv              # TV shows library (usb1)
+      - ${USB2}/tv:/data2/tv              # TV shows library (usb2)
+      - ${USB1}/downloads:/data1/downloads  # Downloads directory (usb1)
+      - ${USB2}/downloads:/data2/downloads  # Downloads directory (usb2)
+    ports:
+      - ${SONARR_PORT}:8989               # Web UI port
+    restart: unless-stopped
+    healthcheck:
+      test: curl --fail http://localhost:${SONARR_PORT} || exit 1
+      interval: 1m
+      timeout: 10s
+      retries: 3
+    mem_limit: 512m           # Limit memory usage to 512 MB
+    cpus: "0.5"              # Limit CPU usage to 50%
+    networks:
+      - arr-network
+      - media-network
+
+  # Radarr: Automates downloading and organization of movies.
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=${PUID}         # User ID for permissions
+      - PGID=${PGID}         # Group ID for permissions
+      - TZ=${TZ}             # Time zone
+    volumes:
+      - radarr-config:/config             # Configuration files
+      - ${USB1}/movies:/data1/movies      # Movies library (usb1)
+      - ${USB2}/movies:/data2/movies      # Movies library (usb2)
+      - ${USB1}/downloads:/data1/downloads  # Downloads directory (usb1)
+      - ${USB2}/downloads:/data2/downloads  # Downloads directory (usb2)
+    ports:
+      - ${RADARR_PORT}:7878               # Web UI port
+    restart: unless-stopped
+    healthcheck:
+      test: curl --fail http://localhost:${RADARR_PORT} || exit 1
+      interval: 1m
+      timeout: 10s
+      retries: 3
+    mem_limit: 512m           # Limit memory usage to 512 MB
+    cpus: "0.5"              # Limit CPU usage to 50%
+    networks:
+      - arr-network
+      - media-network
+
+  # Lidarr: Automates downloading and organization of music.
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    environment:
+      - PUID=${PUID}         # User ID for permissions
+      - PGID=${PGID}         # Group ID for permissions
+      - TZ=${TZ}             # Time zone
+    volumes:
+      - lidarr-config:/config             # Configuration files
+      - ${USB1}/music:/data1/music        # Music library (usb1)
+      - ${USB2}/music:/data2/music        # Music library (usb2)
+      - ${USB1}/downloads:/data1/downloads  # Downloads directory (usb1)
+      - ${USB2}/downloads:/data2/downloads  # Downloads directory (usb2)
+    ports:
+      - ${LIDARR_PORT}:8686               # Web UI port
+    restart: unless-stopped
+    healthcheck:
+      test: curl --fail http://localhost:${LIDARR_PORT} || exit 1
+      interval: 1m
+      timeout: 10s
+      retries: 3
+    mem_limit: 512m           # Limit memory usage to 512 MB
+    cpus: "0.5"              # Limit CPU usage to 50%
+    networks:
+      - arr-network
+      - media-network
+
+  # Readarr: Automates downloading and organization of books.
+  readarr:
+    image: lscr.io/linuxserver/readarr:nightly
+    container_name: readarr
+    environment:
+      - PUID=${PUID}         # User ID for permissions
+      - PGID=${PGID}         # Group ID for permissions
+      - TZ=${TZ}             # Time zone
+    volumes:
+      - readarr-config:/config             # Configuration files
+      - ${USB1}/books:/data1/books         # Books library (usb1)
+      - ${USB2}/books:/data2/books         # Books library (usb2)
+      - ${USB1}/downloads:/data1/downloads  # Downloads directory (usb1)
+      - ${USB2}/downloads:/data2/downloads  # Downloads directory (usb2)
+    ports:
+      - ${READARR_PORT}:8787               # Web UI port
+    restart: unless-stopped
+    healthcheck:
+      test: curl --fail http://localhost:${READARR_PORT} || exit 1
+      interval: 1m
+      timeout: 10s
+      retries: 3
+    mem_limit: 512m           # Limit memory usage to 512 MB
+    cpus: "0.5"              # Limit CPU usage to 50%
+    networks:
+      - arr-network
+      - media-network
+
+  # Readarr-Audio: Automates downloading and organization of audiobooks.
+  readarr-audio:
+    image: lscr.io/linuxserver/readarr:nightly
+    container_name: readarr-audio
+    environment:
+      - PUID=${PUID}         # User ID for permissions
+      - PGID=${PGID}         # Group ID for permissions
+      - TZ=${TZ}             # Time zone
+    volumes:
+      - readarr-audio-config:/config             # Configuration files
+      - ${USB1}/audiobooks:/data1/audiobooks         # Books library (usb1)
+      - ${USB2}/audiobooks:/data2/audiobooks         # Books library (usb2)
+      - ${USB1}/downloads:/data1/downloads  # Downloads directory (usb1)
+      - ${USB2}/downloads:/data2/downloads  # Downloads directory (usb2)
+    ports:
+      - ${READARR_AUDIO_PORT}:8787               # Web UI port
+    restart: unless-stopped
+    healthcheck:
+      test: curl --fail http://localhost:${READARR_AUDIO_PORT} || exit 1
+      interval: 1m
+      timeout: 10s
+      retries: 3
+    mem_limit: 512m           # Limit memory usage to 512 MB
+    cpus: "0.5"              # Limit CPU usage to 50%
+    networks:
+      - arr-network
+      - media-network
+
+  # Prowlarr: Manages indexers for the *arr services.
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - prowlarr-config:/config
+    ports:
+      - ${PROWLARR_PORT}:9696
+    restart: unless-stopped
+    healthcheck:
+      test: curl --fail http://localhost:${PROWLARR_PORT} || exit 1
+      interval: 1m
+      timeout: 10s
+      retries: 3
+    networks:
+      - arr-network
+      - media-network
+
+
+# Volumes for persistent data storage
+volumes:
+  mysql-db-data:
+  ombi-config:
+  sonarr-config:
+  radarr-config:
+  lidarr-config:
+  readarr-config:
+  readarr-audio-config:
+  prowlarr-config:
+
+# Custom networks
+networks:
+  arr-network:
+    driver: bridge
+  media-network:
+    external: true  # Connects to an existing Docker network named "media-network"

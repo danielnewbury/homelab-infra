@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy
+    container_name: docker_socket_proxy
+    restart: unless-stopped
+    privileged: true
+    environment:
+      - CONTAINERS=1
+      - IMAGES=1
+      - AUTH=1
+      - POST=1
+      - DELETE=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - default
+      - jenkins_default
+      - arr-network
+      - downloaders_default
+      - finders_arr-network
+      - media-network
+      - media-server_default
+      - players_media-network
+      - tailwind-pantabury_default
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=300
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # Direct mount for testing
+    networks:
+      - default
+      - arr-network
+      - downloaders_default
+      - finders_arr-network
+      - media-network
+      - media-server_default
+      - players_media-network
+      - tailwind-pantabury_default
+
+networks:
+  default:
+    driver: bridge
+  jenkins_default:
+    external: true
+  arr-network:
+    external: true
+  downloaders_default:
+    external: true
+  finders_arr-network:
+    external: true
+  media-network:
+    external: true
+  media-server_default:
+    external: true
+  players_media-network:
+    external: true
+  tailwind-pantabury_default:
+    external: true
+
